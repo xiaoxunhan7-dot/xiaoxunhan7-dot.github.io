@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>萬物交換管</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+body {
+  margin:0;
+  font-family:'Roboto',sans-serif;
+  color:#f1f1f1;
+  position:relative;
+  overflow-x:hidden;
+  background:#0d0d26;
+}
+header {background:rgba(0,0,0,0.85);padding:1.5rem;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.5);position:sticky;top:0;z-index:100;}
+header h1 {margin:0;font-size:2.5rem;letter-spacing:3px;color:#ffeedd;}
+nav a {color:#ffeedd;margin:0 1rem;text-decoration:none;font-weight:bold;transition:color 0.3s;}
+nav a:hover {color:#9fd3c7;}
+main {padding:2rem;text-align:center;}
+section {margin:3rem auto;max-width:900px;padding:2rem;background:rgba(0,0,0,0.85);border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.7);text-align:left;position:relative;overflow:hidden;}
+section h2 {text-align:center;margin-bottom:1rem;font-size:2rem;color:#9fd3c7;}
+.quote-box {margin:2rem auto;padding:1.5rem;max-width:600px;background:rgba(255,255,255,0.1);border-radius:15px;font-style:italic;box-shadow:0 4px 10px rgba(0,0,0,0.5);}
+.poem,.healing-quote,.study-note ul {color:#ffffff;}
+.healing-quote {margin:1rem 0;padding:1rem;background:rgba(159,211,199,0.2);border-radius:10px;text-align:center;font-size:1.1rem;color:#ffffff;}
+.social-section {margin-top:2rem;padding:1.5rem;background:rgba(159,211,199,0.1);border-radius:15px;}
+.social-section input,.social-section textarea,.social-section select {width:100%;padding:0.5rem;margin-bottom:1rem;border-radius:8px;border:none;}
+.social-section button {padding:0.5rem 1rem;border-radius:8px;border:none;background:#9fd3c7;color:#0d1b2a;font-weight:bold;cursor:pointer;transition:background 0.3s;}
+.social-section button:hover {background:#77b6a6;}
+.post {background:rgba(0,0,0,0.5);padding:1rem;margin-bottom:1rem;border-radius:12px;position:relative;}
+.post-time {font-size:0.8rem;color:#bbb;}
+.reply-section {margin-top:0.5rem;padding-left:1rem;}
+.reply {background:rgba(255,255,255,0.05);padding:0.5rem;margin-top:0.5rem;border-radius:8px;font-size:0.9rem;color:#ffeedd;}
+footer {margin-top:3rem;padding:1rem;text-align:center;font-size:0.9rem;color:#bbb;border-top:1px solid rgba(255,255,255,0.1);}
+
+/* 星空閃爍 */
+.star {position:absolute;width:2px;height:2px;background:white;border-radius:50%;opacity:0.8;animation:twinkle 2s infinite;}
+@keyframes twinkle {0%,100%{opacity:0.3;}50%{opacity:1;}}
+
+/* 流星 */
+.shooting-star {position:absolute;width:2px;height:100px;background:linear-gradient(45deg,#fff,rgba(255,255,255,0));top:-100px;animation:shoot 2s linear infinite;}
+@keyframes shoot {0%{transform:translateX(0) translateY(0) rotate(45deg);opacity:1;}100%{transform:translateX(800px) translateY(600px) rotate(45deg);opacity:0;}}
+
+/* 漂浮元素 */
+.floating {position:absolute;background:rgba(255,255,255,0.1);border-radius:50%;animation:float 10s ease-in-out infinite alternate;}
+@keyframes float {0%{transform:translateY(0px) translateX(0px);}100%{transform:translateY(-50px) translateX(30px);}}
+</style>
+</head>
+<body>
+<header>
+<h1>萬物交換管</h1>
+<nav>
+<a href="#poetry">詩歌</a>
+<a href="#healing">治癒</a>
+<a href="#study">學習</a>
+<a href="#friends">好友</a>
+</nav>
+</header>
+<main>
+<h2>歡迎來到萬物交換管 🌌</h2>
+<div class="quote-box" id="quote-box">
+🌟 今日的話語：<br>
+<span id="quote">"文字，是夜空裡最溫柔的星光。"</span><br>
+<button class="btn-random" onclick="newQuote()">再抽一句</button>
+</div>
+<section id="poetry">
+<h2>📖 詩歌區</h2>
+<div class="poem">「月光靜靜灑落，昨日的夢還在心底閃爍。」</div>
+<div class="social-section">
+<input type="text" id="username-poetry" placeholder="你的名字">
+<textarea id="message-poetry" rows="3" placeholder="發表你的詩歌..."></textarea>
+<select id="category-poetry">
+<option value="詩歌">詩歌</option>
+<option value="故事">故事</option>
+</select>
+<button onclick="postMessage('poetry')">發佈</button>
+<div id="posts-poetry"></div>
+</div>
+</section>
+<section id="healing">
+<h2>🌿 治癒區</h2>
+<div class="healing-quote">「別急著長大，你永遠值得被溫柔以待。」</div>
+<div class="social-section">
+<input type="text" id="username-healing" placeholder="你的名字">
+<textarea id="message-healing" rows="3" placeholder="分享治癒的話語..."></textarea>
+<select id="category-healing">
+<option value="心情">心情</option>
+<option value="治癒">治癒</option>
+</select>
+<button onclick="postMessage('healing')">發佈</button>
+<div id="posts-healing"></div>
+</div>
+</section>
+<section id="study">
+<h2>📚 學習區</h2>
+<div class="study-note"><ul><li>化學鍵與分子作用力</li></ul></div>
+<div class="social-section">
+<input type="text" id="username-study" placeholder="你的名字">
+<textarea id="message-study" rows="3" placeholder="分享學習心得..."></textarea>
+<select id="category-study">
+<option value="心得">心得</option>
+<option value="筆記">筆記</option>
+</select>
+<button onclick="postMessage('study')">發佈</button>
+<div id="posts-study"></div>
+</div>
+</section>
+<section id="friends">
+<h2>👥 好友互動區</h2>
+<input type="text" id="friend-name" placeholder="輸入好友名字以瀏覽留言">
+<button onclick="viewFriendPosts()">查看留言</button>
+<div id="friend-posts"></div>
+</section>
+</main>
+<footer>© 2025 萬物交換管 | 星空下的交流天地</footer>
+<script>
+const allMessages=[];
+const quotes=[
+  "文字，是夜空裡最溫柔的星光。",
+  "別害怕黑暗，因為星星總在夜裡閃耀。",
+  "每一次微笑都是心靈的光芒。",
+  "夢想像流星，劃過天際便留下光輝。",
+  "在夜裡低語，星辰會傾聽。",
+  "希望總在黑暗中閃爍，等待被看見。"
+];
+
+function newQuote(){
+  let dynamicQuotes=quotes.concat(allMessages.map(msg=>msg.content));
+  if(dynamicQuotes.length>0){
+    document.getElementById('quote').innerText=dynamicQuotes[Math.floor(Math.random()*dynamicQuotes.length)];
+  }
+}
+
+function postMessage(type){
+  let username=document.getElementById('username-'+type).value.trim();
+  let message=document.getElementById('message-'+type).value.trim();
+  let category=document.getElementById('category-'+type).value;
+  if(username&&message){
+    let postsDiv=document.getElementById('posts-'+type);
+    let newPost=document.createElement('div');
+    newPost.className='post';
+    let timestamp=new Date().toLocaleString();
+    newPost.innerHTML=`<strong>${username}</strong> <span class='post-time'>${timestamp}</span> [${category}]:<br>${message}<div class='reply-section'><input type='text' placeholder='回覆...' class='reply-input'> <button onclick='addReply(this)'>回覆</button></div><div class='replies'></div>`;
+    postsDiv.prepend(newPost);
+    allMessages.push({username:username,content:message,type:type,category:category});
+    document.getElementById('message-'+type).value='';
+    newQuote();
+  }else{alert('請輸入名字和訊息！');}}
+
+function addReply(btn){
+  let input=btn.previousElementSibling;
+  let replyText=input.value.trim();
+  if(replyText){
+    let repliesDiv=btn.parentElement.nextElementSibling;
+    let newReply=document.createElement('div');
+    newReply.className='reply';
+    newReply.innerHTML=replyText;
+    repliesDiv.appendChild(newReply);
+    input.value='';
+  }}
+
+function viewFriendPosts(){
+  let friendName=document.getElementById('friend-name').value.trim();
+  let friendDiv=document.getElementById('friend-posts');
+  friendDiv.innerHTML='';
+  if(friendName){
+    allMessages.filter(msg=>msg.username===friendName).forEach(msg=>{
+      let div=document.createElement('div');
+      div.className='post';
+      let timestamp=new Date().toLocaleString();
+      div.innerHTML=`<strong>${msg.username}</strong> <span class='post-time'>${timestamp}</span> [${msg.category}]:<br>${msg.content}`;
+      friendDiv.appendChild(div);
+    });
+  }}
+
+// 動態星空背景生成
+for(let i=0;i<100;i++){
+  let star=document.createElement('div');
+  star.className='star';
+  star.style.top=Math.random()*window.innerHeight+'px';
+  star.style.left=Math.random()*window.innerWidth+'px';
+  star.style.width=(Math.random()*2+1)+'px';
+  star.style.height=(Math.random()*2+1)+'px';
+  document.body.appendChild(star);
+}
+for(let i=0;i<5;i++){
+  let floatElem=document.createElement('div');
+  floatElem.className='floating';
+  floatElem.style.top=Math.random()*window.innerHeight+'px';
+  floatElem.style.left=Math.random()*window.innerWidth+'px';
+  floatElem.style.width=(Math.random()*50+20)+'px';
+  floatElem.style.height=(Math.random()*50+20)+'px';
+  document.body.appendChild(floatElem);
+}
+for(let i=0;i<3;i++){
+  let meteor=document.createElement('div');
+  meteor.className='shooting-star';
+  meteor.style.left=Math.random()*window.innerWidth+'px';
+  document.body.appendChild(meteor);
+}
+</script>
+</body>
+</html>
