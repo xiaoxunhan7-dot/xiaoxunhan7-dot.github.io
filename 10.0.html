@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>糖霜星球 SugarPlanet — 智慧烘焙管理平台</title>
+<style>
+body { font-family: 'Arial', sans-serif; background: #FFF8F0; color: #4B3B2A; margin: 0; padding: 0; }
+header { background: #D9B08C; padding: 20px; text-align: center; font-size: 1.8em; color: #fff; }
+nav { display: flex; justify-content: space-around; background: #F3E2D0; padding: 10px 0; flex-wrap: wrap; }
+nav button { background: #CFA17D; border: none; padding: 10px 15px; border-radius: 8px; color: #fff; cursor: pointer; font-weight: bold; margin: 5px; }
+nav button:hover { background: #B88463; }
+main { padding: 20px; }
+.hidden { display: none; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+table, th, td { border: 1px solid #CFA17D; }
+th, td { padding: 8px; text-align: left; }
+th { background: #EED6C4; }
+input[type=number], input[type=text] { width: 100px; }
+h2, h3 { margin-top: 0; }
+.recipe-card { border: 1px solid #CFA17D; padding: 10px; margin: 10px 0; border-radius: 8px; background: #FFF5EE; }
+.alert { color: red; font-weight: bold; margin-top: 10px; }
+canvas { background: #fff; border: 1px solid #CFA17D; border-radius: 8px; margin-top: 20px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header>糖霜星球 SugarPlanet</header>
+<nav>
+  <button onclick="showSection('recipes')">食譜庫</button>
+  <button onclick="showSection('inventory')">庫存管理</button>
+  <button onclick="showSection('production')">生產計畫</button>
+  <button onclick="showSection('orders')">訂單管理</button>
+  <button onclick="showSection('report')">報表</button>
+</nav>
+<main>
+  <!-- 食譜庫 -->
+  <section id="recipes">
+    <h2>食譜庫</h2>
+    <div id="recipe-list"></div>
+  </section>
+
+  <!-- 庫存管理 -->
+  <section id="inventory" class="hidden">
+    <h2>庫存管理</h2>
+    <div id="low-stock-alert" class="alert"></div>
+    <table>
+      <thead>
+        <tr><th>材料</th><th>單位</th><th>單價</th><th>庫存</th><th>最小庫存</th><th>操作</th></tr>
+      </thead>
+      <tbody id="inventory-table"></tbody>
+    </table>
+    <button onclick="addMaterial()">新增材料</button>
+  </section>
+
+  <!-- 生產計畫 -->
+  <section id="production" class="hidden">
+    <h2>生產計畫</h2>
+    <div>
+      <label>選擇食譜：
+        <select id="production-recipe"></select>
+      </label>
+      <label>份量：
+        <input type="number" id="production-qty" value="1" min="1">
+      </label>
+      <button onclick="addProduction()">新增到計畫</button>
+    </div>
+    <div id="production-list"></div>
+  </section>
+
+  <!-- 訂單管理 -->
+  <section id="orders" class="hidden">
+    <h2>訂單管理</h2>
+    <div>
+      <label>顧客名稱：<input type="text" id="order-customer"></label>
+      <label>選擇食譜：
+        <select id="order-recipe"></select>
+      </label>
+      <label>份量：<input type="number" id="order-qty" value="1" min="1"></label>
+      <button onclick="addOrder()">新增訂單</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>顧客</th><th>食譜</th><th>份量</th><th>日期</th><th>狀態</th><th>操作</th></tr>
+      </thead>
+      <tbody id="order-table"></tbody>
+    </table>
+  </section>
+
+  <!-- 報表 -->
+  <section id="report" class="hidden">
+    <h2>報表與圖表</h2>
+    <button onclick="exportCSV()">匯出庫存與生產報表 CSV</button>
+    <canvas id="inventoryChart" width="400" height="200"></canvas>
+    <canvas id="productionChart" width="400" height="200"></canvas>
+    <h3>淨利統計</h3>
+    <canvas id="profitChart" width="400" height="200"></canvas>
+  </section>
+</main>
+
+<script>
+  // ================== 資料 ==================
+  let recipes = [
+    {name:"奶油吐司", category:"麵包", ingredients:[{name:"高筋麵粉",qty:500,unit:"g"},{name:"奶油",qty:50,unit:"g"},{name:"牛奶",qty:250,unit:"ml"}]},
+    {name:"巧克力曲奇", category:"餅乾", ingredients:[{name:"低筋麵粉",qty:200,unit:"g"},{name:"奶油",qty:100,unit:"g"},{name:"巧克力豆",qty:80,unit:"g"}]},
+    {name:"戚風蛋糕", category:"蛋糕", ingredients:[{name:"蛋",qty:4,unit:"顆"},{name:"低筋麵粉",qty:120,unit:"g"},{name:"糖",qty:100,unit:"g"}]},
+    {name:"水果塔", category:"派塔", ingredients:[{name:"塔皮粉",qty:200,unit:"g"},{name:"奶油",qty:100,unit:"g"},{name:"蛋",qty:1,unit:"顆"}]},
+    {name:"焦糖布丁", category:"甜點", ingredients:[{name:"蛋",qty:3,unit:"顆"},{name:"牛奶",qty:300,unit:"ml"},{name:"糖",qty:50,unit:"g"}]},
+    {name:"奶茶", category:"飲品", ingredients:[{name:"紅茶包",qty:2,unit:"包"},{name:"牛奶",qty:200,unit:"ml"},{name:"糖",qty:20,unit:"g"}]},
+    {name:"藍莓乳酪蛋糕", category:"蛋糕", ingredients:[
+      {name:"奶油",qty:100,unit:"g"},{name:"糖",qty:80,unit:"g"},{name:"蛋",qty:3,unit:"顆"},
+      {name:"低筋麵粉",qty:100,unit:"g"},{name:"乳酪",qty:200,unit:"g"},{name:"藍莓",qty:100,unit:"g"}
+    ]},
+    {name:"檸檬瑪德蓮", category:"餅乾", ingredients:[
+      {name:"低筋麵粉",qty:120,unit:"g"},{name:"蛋",qty:2,unit:"顆"},{name:"糖",qty:80,unit:"g"},
+      {name:"奶油",qty:60,unit:"g"},{name:"檸檬汁",qty:10,unit:"ml"}
+    ]},
+    {name:"可可奶酪", category:"甜點", ingredients:[
+      {name:"奶油",qty:50,unit:"g"},{name:"牛奶",qty:200,unit:"ml"},{name:"糖",qty:40,unit:"g"},
+      {name:"可可粉",qty:20,unit:"g"},{name:"吉利丁片",qty:2,unit:"片"}
+    ]}
+  ];
+
+  // 每份售價
+  recipes.forEach(r=>{
+    r.price = 100; // 預設
+    if(r.name=="奶油吐司") r.price=100;
+    if(r.name=="巧克力曲奇") r.price=80;
+    if(r.name=="戚風蛋糕") r.price=150;
+    if(r.name=="水果塔") r.price=180;
+    if(r.name=="焦糖布丁") r.price=90;
+    if(r.name=="奶茶") r.price=60;
+    if(r.name=="藍莓乳酪蛋糕") r.price=220;
+    if(r.name=="檸檬瑪德蓮") r.price=70;
+    if(r.name=="可可奶酪") r.price=100;
+  });
+
+  let inventory = [
+    {name:"高筋麵粉",unit:"g",price:0.1,stock:1000,minStock:200},
+    {name:"低筋麵粉",unit:"g",price:0.12,stock:1000,minStock:200},
+    {name:"奶油",unit:"g",price:0.5,stock:500,minStock:50},
+    {name:"牛奶",unit:"ml",price:0.3,stock:1000,minStock:200},
+    {name:"蛋",unit:"顆",price:5,stock:20,minStock:5},
+    {name:"巧克力豆",unit:"g",price:2,stock:200,minStock:20},
+    {name:"糖",unit:"g",price:0.1,stock:500,minStock:50},
+    {name:"塔皮粉",unit:"g",price:1,stock:300,minStock:30},
+    {name:"紅茶包",unit:"包",price:3,stock:50,minStock:10},
+    {name:"乳酪",unit:"g",price:5,stock:200,minStock:20},
+    {name:"藍莓",unit:"g",price:2,stock:200,minStock:20},
+    {name:"檸檬汁",unit:"ml",price:1,stock:50,minStock:5},
+    {name:"可可粉",unit:"g",price:3,stock:100,minStock:10},
+    {name:"吉利丁片",unit:"片",price:5,stock:20,minStock:5}
+  ];
+
+  let productionPlan = [];
+  let orders = [];
+
+  // ================== 通知 ==================
+  if (Notification.permission !== "granted") Notification.requestPermission();
+  function checkLowStockNotification() {
+    inventory.forEach(item => {
+      if (item.stock <= item.minStock) {
+        if (Notification.permission === "granted") {
+          new Notification(`庫存警示: ${item.name}`, {body: `庫存僅剩 ${item.stock}${item.unit}，請盡快補貨！`});
+        }
+      }
+    });
+  }
+
+  // ================== 頁面切換 ==================
+  function showSection(id){
+    document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    if(id==='recipes') renderRecipes();
+    if(id==='inventory') renderInventory();
+    if(id==='production') renderProductionSelect();
+    if(id==='orders') renderOrderSelect();
+    if(id==='report') renderReportCharts();
+  }
+
+  // ================== 食譜庫 ==================
+  function renderRecipes(){
+    const list = document.getElementById('recipe-list');
+    list.innerHTML = '';
+    recipes.forEach(r => {
+      let profit = r.price - calculateCost(r);
+      let card = document.createElement('div');
+      card.className = 'recipe-card';
+      card.innerHTML = `<h3>${r.name} (${r.category}) - 售價: ${r.price}元</h3>
+        <ul>${r.ingredients.map(i=>`<li>${i.name}: ${i.qty}${i.unit}</li>`).join('')}</ul>
+        <p>成本: ${calculateCost(r)}元，淨利: ${profit}元</p>`;
+      list.appendChild(card);
+    });
+  }
+
+  // ================== 庫存管理 ==================
+  function renderInventory(){
+    const table = document.getElementById('inventory-table');
+    const alertDiv = document.getElementById('low-stock-alert');
+    table.innerHTML = ''; alertDiv.innerHTML = '';
+    let lowStockItems = [];
+    inventory.forEach((m,i)=>{
+      if(m.stock <= m.minStock) lowStockItems.push(`${m.name} 庫存不足!`);
+      let row = document.createElement('tr');
+      row.innerHTML = `<td>${m.name}</td><td>${m.unit}</td><td>${m.price}</td><td>${m.stock}</td><td>${m.minStock}</td>
+        <td><button onclick="editMaterial(${i})">編輯</button></td>`;
+      table.appendChild(row);
+    });
+    if(lowStockItems.length>0){
+      alertDiv.innerHTML = '⚠️ ' + lowStockItems.join(', ');
+      checkLowStockNotification();
+    }
+  }
+  function addMaterial(){
+    let name = prompt('材料名稱:'); if(!name) return;
+    let unit = prompt('單位:');
+    let price = parseFloat(prompt('單價:'));
+    let stock = parseFloat(prompt('庫存量:'));
+    let minStock = parseFloat(prompt('最小庫存量:'));
+    inventory.push({name,unit,price,stock,minStock});
+    renderInventory();
+  }
+  function editMaterial(index){
+    let m = inventory[index];
+    m.stock = parseFloat(prompt('更新庫存量:', m.stock)) || m.stock;
+    m.minStock = parseFloat(prompt('更新最小庫存量:', m.minStock)) || m.minStock;
+    renderInventory();
+  }
+
+  // ================== 生產計畫 ==================
+  function renderProductionSelect(){
+    const select = document.getElementById('production-recipe');
+    select.innerHTML = recipes.map((r,i)=>`<option value="${i}">${r.name}</option>`).join('');
+    renderProductionList();
+  }
+  function addProduction(){
+    const idx = document.getElementById('production-recipe').value;
+    const qty = parseInt(document.getElementById('production-qty').value);
+    let recipe = recipes[idx];
+    productionPlan.push({recipe, qty});
+    recipe.ingredients.forEach(i=>{
+      let mat = inventory.find(m=>m.name===i.name);
+      if(mat) mat.stock -= i.qty*qty;
+    });
+    renderProductionList(); renderInventory();
+  }
+  function renderProductionList(){
+    const div = document.getElementById('production-list');
+    div.innerHTML = productionPlan.map((p,i)=>`<div class="recipe-card">
+      <strong>${p.recipe.name}</strong> x ${p.qty}份
+      <ul>${p.recipe.ingredients.map(i=>`<li>${i.name}: ${i.qty*p.qty}${i.unit}</li>`).join('')}</ul>
+      </div>`).join('');
+  }
+
+  // ================== 訂單管理 ==================
+  function renderOrderSelect(){
+    document.getElementById('order-recipe').innerHTML = recipes.map((r,i)=>`<option value="${i}">${r.name}</option>`).join('');
+    renderOrders();
+  }
+  function addOrder(){
+    const customer = document.getElementById('order-customer').value;
+    const recipeIdx = document.getElementById('order-recipe').value;
+    const qty = parseInt(document.getElementById('order-qty').value);
+    if(!customer){ alert('請輸入顧客名稱'); return; }
+    const recipe = recipes[recipeIdx];
+    let enough = true;
+    recipe.ingredients.forEach(i=>{
+      let mat = inventory.find(m=>m.name===i.name);
+      if(!mat || mat.stock < i.qty*qty) enough = false;
+    });
+    if(!enough){ alert('庫存不足，無法下訂'); return; }
+    recipe.ingredients.forEach(i=>{
+      let mat = inventory.find(m=>m.name===i.name);
+      mat.stock -= i.qty*qty;
+    });
+    orders.push({customer, recipe: recipe.name, qty, date: new Date().toLocaleString(), status: '待生產'});
+    renderOrders(); renderInventory(); renderProductionSelect();
+  }
+  function renderOrders(){
+    const tbody = document.getElementById('order-table');
+    tbody.innerHTML = orders.map((o,i)=>`<tr>
+      <td>${o.customer}</td><td>${o.recipe}</td><td>${o.qty}</td><td>${o.date}</td><td>${o.status}</td>
+      <td>${o.status==='待生產'?`<button onclick="markOrderCompleted(${i})">標記完成</button>`:''}
+      <button onclick="deleteOrder(${i})">刪除</button></td></tr>`).join('');
+  }
+  function markOrderCompleted(idx){ orders[idx].status = '已完成'; renderOrders(); }
+  function deleteOrder(idx){ orders.splice(idx,1); renderOrders(); }
+
+  // ================== 成本與淨利 ==================
+  function calculateCost(recipe){
+    let cost=0;
+    recipe.ingredients.forEach(i=>{
+      let mat = inventory.find(m=>m.name===i.name);
+      if(mat) cost += i.qty*mat.price;
+    });
+    return cost;
+  }
+  function calculateProfit(recipe){
+    return recipe.price - calculateCost(recipe);
+  }
+
+  // ================== 報表與圖表 ==================
+  function renderReportCharts(){
+    const invCtx = document.getElementById('inventoryChart').getContext('2d');
+    new Chart(invCtx, {type:'bar',
+      data:{
+        labels: inventory.map(m=>m.name),
+        datasets:[{label:'庫存量', data: inventory.map(m=>m.stock), backgroundColor:'#CFA17D'},
+                  {label:'最小庫存量', data: inventory.map(m=>m.minStock), backgroundColor:'#EED6C4'}]
+      },
+      options:{ responsive:true, plugins:{legend:{position:'top'}} }
+    });
+
+    const prodCtx = document.getElementById('productionChart').getContext('2d');
+    new Chart(prodCtx, {type:'pie',
+      data:{
+        labels: productionPlan.map(p=>p.recipe.name),
+        datasets:[{label:'份量', data: productionPlan.map(p=>p.qty),
+          backgroundColor:['#CFA17D','#EED6C4','#D9B08C','#B88463','#F3E2D0','#FFF5EE','#BCAAA4','#D7CCC8','#FFE0B2']}]
+      },
+      options:{ responsive:true, plugins:{legend:{position:'right'}} }
+    });
+
+    const profitCtx = document.getElementById('profitChart').getContext('2d');
+    new Chart(profitCtx,{type:'bar',
+      data:{
+        labels: recipes.map(r=>r.name),
+        datasets:[{label:'每份淨利', data: recipes.map(r=>calculateProfit(r)), backgroundColor:'#CFA17D'}]
+      },
+      options:{ responsive:true, plugins:{legend:{display:false}} }
+    });
+  }
+
+  // ================== CSV匯出 ==================
+  function exportCSV(){
+    let csv='名稱,類別,份量,材料,用量,單位,庫存\n';
+    productionPlan.forEach(p=>{
+      p.recipe.ingredients.forEach(i=>{
+        let mat = inventory.find(m=>m.name===i.name);
+        csv += `${p.recipe.name},${p.recipe.category},${p.qty},${i.name},${i.qty*p.qty},${i.unit},${mat?mat.stock:'N/A'}\n`;
+      });
+    });
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='production_report.csv'; a.click();
+  }
+
+  // ================== 初始化 ==================
+  renderRecipes();
+</script>
+</body>
+</html>
